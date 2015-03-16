@@ -3,7 +3,7 @@ package com.fang.timingtask;
 /**
  * Created by fang on 3/16/15.
  */
-public interface TimingTaskInterface {
+public interface ITimingTask {
 
     /**
      * return the id of the task if success, else return -1
@@ -40,4 +40,10 @@ public interface TimingTaskInterface {
      * @return
      */
     public void stopTask(int taskID);
+
+    /**
+     * stop all timing tasks
+     * @return
+     */
+    public void stopAllTasks();
 }

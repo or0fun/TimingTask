@@ -15,7 +15,7 @@ import android.util.SparseArray;
  *
  * Created by fang on 3/16/15.
  */
-public class TimingTaskImp implements TimingTaskInterface {
+public class TimingTaskImp implements ITimingTask {
 
     private final String TAG = "TimingTaskImp";
     private static TimingTaskImp mInstance;
@@ -49,13 +49,12 @@ public class TimingTaskImp implements TimingTaskInterface {
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(TimingTaskConstant.ACTION);
-        intentFilter.setPriority(0x7fffffff);
         context.registerReceiver(selfBroadcastReceiver, intentFilter);
         return true;
     }
 
     @Override
-    public int startTask(long startTime, long intervalMillis, TimingTaskListener listener) {
+    public synchronized int startTask(long startTime, long intervalMillis, TimingTaskListener listener) {
         if (null == listener) {
             Log.d(TAG, "startTask: listener is null");
             return TimingTaskConstant.INVALID_PARAM;
@@ -70,7 +69,7 @@ public class TimingTaskImp implements TimingTaskInterface {
     }
 
     @Override
-    public int startTask(long startTime, TimingTaskListener listener) {
+    public synchronized int startTask(long startTime, TimingTaskListener listener) {
         if (null == mContext) {
             Log.d(TAG, "startTask: context is null");
             return TimingTaskConstant.INVALID_PARAM;
@@ -89,7 +88,7 @@ public class TimingTaskImp implements TimingTaskInterface {
     }
 
     @Override
-    public void stopTask(int taskID) {
+    public synchronized void stopTask(int taskID) {
         if (null == mContext) {
             Log.d(TAG, "startTask: context is null");
             return;
@@ -100,11 +99,22 @@ public class TimingTaskImp implements TimingTaskInterface {
         mListeners.delete(taskID);
     }
 
+    @Override
+    public synchronized void stopAllTasks() {
+        Log.d(TAG, "stopAllTasks: begin");
+        AlarmManager manager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
+        int len = mListeners.size();
+        for (int i = 0; i < len; i++) {
+            manager.cancel(getPendingIntent(mContext, TimingTaskConstant.ACTION, mListeners.keyAt(i)));
+            mListeners.delete(mListeners.keyAt(i));
+        }
+    }
+
     private PendingIntent getPendingIntent(Context context, String action, int param) {
         Intent intent = new Intent(context, selfBroadcastReceiver.getClass());
         intent.setAction(action);
         intent.putExtra(TimingTaskConstant.PARAM, param);
-        return PendingIntent.getService(context, action.hashCode(),
+        return PendingIntent.getBroadcast(context, action.hashCode(),
                 intent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
